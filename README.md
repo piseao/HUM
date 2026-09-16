@@ -4,6 +4,8 @@
 
 브라우저에서 부른 노래를 기록하고, Spotify Basic Pitch로 음표를 추출한 뒤 직접 수정하고 확정하는 **Phase 1 로컬 MVP**입니다. 유료 API 키 없이 실행됩니다.
 
+외부 HTTPS 테스트용 Vercel Hobby + Render Free 설정도 준비되어 있습니다. 계정 연결·배포 절차와 무료 저장소의 제한은 [배포 안내](docs/deployment.md)를 확인하세요. 아래 로컬 실행 방식은 그대로 사용할 수 있습니다.
+
 ## 1. 필요한 프로그램
 
 - Node.js 22 이상과 npm: [Node.js 설치 페이지](https://nodejs.org/)
@@ -98,7 +100,7 @@ npm run dev
 
 <http://localhost:3000>
 
-마이크는 `localhost` 또는 HTTPS에서만 허용됩니다. 휴대폰에서 `localhost`를 입력하면 휴대폰 자신을 가리키므로 이 Mac에 접속되지 않습니다. 이번 앱은 로컬 전용입니다. 모바일 크기의 UI는 브라우저 자동 테스트로 확인합니다.
+마이크는 `localhost` 또는 HTTPS에서만 허용됩니다. 휴대폰에서 `localhost`를 입력하면 휴대폰 자신을 가리키므로 이 Mac에 접속되지 않습니다. 외부 HTTPS 테스트는 [배포 안내](docs/deployment.md)를 따릅니다. 모바일 크기의 UI는 브라우저 자동 테스트로 확인합니다.
 
 ### 이 컴퓨터에서 간편 실행
 
@@ -281,7 +283,7 @@ backend/projects/<UUID>/
 
 - Basic Pitch의 전사 결과는 추정입니다. 숨소리, 비브라토, 배음, 소음에 따라 누락·중복 음표가 생길 수 있습니다. 원본과 비교하면서 직접 수정하세요.
 - 사람 목소리의 정확도, iOS/Safari 실제 마이크, 다수 사용자·장시간 분석은 추가 검증이 필요합니다.
-- 로그인 없는 개인용 로컬 앱입니다. 공용 서버나 인터넷에 그대로 공개하는 범위는 포함하지 않습니다.
+- 로그인 계정은 없습니다. 로컬은 개인용이며, 외부 테스트는 브라우저별 저장 공간을 분리합니다. 무료 서버의 데이터는 절전·재시작·재배포 시 사라집니다.
 - AI 편곡, AI 보컬, 음원 출시, 결제 등 Phase 2 기능은 구현하지 않았습니다.
 
 자세한 API·설계: [docs/architecture.md](docs/architecture.md). 검증 기록: [docs/verification.md](docs/verification.md).

@@ -6,7 +6,6 @@ import {
   AudioLines,
   Check,
   ChevronRight,
-  Download,
   FolderOpen,
   LoaderCircle,
   LockKeyhole,
@@ -19,6 +18,7 @@ import {
 } from "lucide-react";
 import Recorder from "@/components/recorder";
 import PianoRoll from "@/components/piano-roll";
+import { OriginalAudio, MidiDownload } from "@/components/project-media";
 import { api, jsonRequest } from "@/lib/api";
 import { playMelody } from "@/lib/player";
 import { Project, ProjectSummary } from "@/types/project";
@@ -130,10 +130,19 @@ export default function Studio() {
   }
   async function analyze(id: string) {
     setView("analyzing");
-    const result = await api<{ project: Project }>(
-      "/audio/analyze",
+    let result = await api<{ project?: Project }>(
+      "/audio/analyze?background=true",
       jsonRequest("POST", { project_id: id }),
     );
+    const deadline = Date.now() + 10 * 60 * 1000;
+    while (!result.project) {
+      if (Date.now() > deadline)
+        throw new Error(
+          "분석이 오래 걸리고 있습니다. 잠시 후 내 프로젝트에서 다시 확인해 주세요.",
+        );
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      result = await api<{ project?: Project }>(`/audio/analyze/${id}`);
+    }
     setProject(result.project);
     setView("editor");
     setDirty(false);
@@ -342,7 +351,11 @@ export default function Studio() {
                   내 프로젝트{" "}
                   <span>{projects.length.toString().padStart(2, "0")}</span>
                 </h2>
-                <span className="muted">이 컴퓨터에 저장됨</span>
+                <span className="muted">
+                  {process.env.NEXT_PUBLIC_ISOLATE_CLIENTS === "true"
+                    ? "이 브라우저의 프로젝트"
+                    : "이 컴퓨터에 저장됨"}
+                </span>
               </div>
               {projects.length ? (
                 <div className="project-list">
@@ -461,13 +474,7 @@ export default function Studio() {
                       {project.tempo_source === "estimated" ? "추정" : "기본값"}
                     </small>
                   </span>
-                  <a
-                    className="icon-link"
-                    href={`/api/projects/${project.id}/midi`}
-                    title="저장된 MIDI 다운로드"
-                  >
-                    <Download size={19} />
-                  </a>
+                  <MidiDownload projectId={project.id} onError={setError} />
                 </div>
                 <PianoRoll
                   key={project.id}
@@ -497,12 +504,7 @@ export default function Studio() {
                   원본 · {project.audio.duration.toFixed(1)}초
                 </span>
               </div>
-              <audio
-                controls
-                src={`/api/projects/${project.id}/audio`}
-                aria-label="원본 녹음"
-                onPlay={stop}
-              />
+              <OriginalAudio projectId={project.id} onPlay={stop} />
             </section>
             {project.input_type === "song" && (
               <section className="lyrics-section">

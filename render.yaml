@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: hum-phase1-api
+    runtime: docker
+    repo: https://github.com/piseao/HUM
+    branch: main
+    region: singapore
+    plan: free
+    numInstances: 1
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    autoDeployTrigger: "off"
+    envVars:
+      - key: HUM_DATA_DIR
+        value: /data/projects
+      - key: HUM_ISOLATE_CLIENTS
+        value: "true"
+      - key: HUM_ALLOWED_ORIGINS
+        sync: false

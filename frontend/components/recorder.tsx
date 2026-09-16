@@ -72,7 +72,7 @@ export default function Recorder({
     try {
       if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder)
         throw new Error(
-          "이 브라우저에서는 녹음할 수 없습니다. 최신 Chrome 또는 Safari에서 localhost로 접속해 주세요.",
+          "이 브라우저에서는 녹음할 수 없습니다. 최신 Chrome 또는 Safari에서 HTTPS 주소나 localhost로 접속해 주세요.",
         );
       const media = await navigator.mediaDevices.getUserMedia({
         audio: {

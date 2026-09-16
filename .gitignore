@@ -13,6 +13,7 @@ projects/
 *.mid
 node_modules/
 .next/
+.next-deploy-test/
 __pycache__/
 .venv/
 venv/
@@ -24,3 +25,5 @@ playwright-report/
 .DS_Store
 *.log
 .run/
+.vercel/
+.railway/
