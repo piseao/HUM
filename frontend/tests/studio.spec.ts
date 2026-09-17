@@ -44,7 +44,7 @@ test("record, analyze with Basic Pitch, edit, play, lock, save and reopen", asyn
   await page.getByRole("button", { name: "분석하기", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "우리가 들은 멜로디입니다." }),
-  ).toBeVisible({ timeout: 150_000 });
+  ).toBeVisible({ timeout: Number(process.env.HUM_TEST_ANALYSIS_TIMEOUT_MS || 150_000) });
   await expect(page.locator(".note").first()).toBeVisible();
   const first = page.locator(".note").first();
   await first.scrollIntoViewIfNeeded();

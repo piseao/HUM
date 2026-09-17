@@ -7,7 +7,7 @@ test("mobile humming upload, touch pitch edit, resize and draft restore", async 
   await expect(page.getByRole("button", { name: "흥얼거리기" })).toHaveAttribute("aria-pressed", "true");
   await page.locator('input[type="file"]').setInputFiles(process.env.HUM_TEST_WAV || "/tmp/hum-smoke/test-melody.wav");
   await page.getByRole("button", { name: "분석하기", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "우리가 들은 멜로디입니다." })).toBeVisible({ timeout: 150_000 });
+  await expect(page.getByRole("heading", { name: "우리가 들은 멜로디입니다." })).toBeVisible({ timeout: Number(process.env.HUM_TEST_ANALYSIS_TIMEOUT_MS || 150_000) });
   const note = page.locator(".note").first();
   await note.scrollIntoViewIfNeeded();
   const before = await note.getAttribute("aria-label");

@@ -4,7 +4,9 @@
 
 브라우저에서 부른 노래를 기록하고, Spotify Basic Pitch로 음표를 추출한 뒤 직접 수정하고 확정하는 **Phase 1 로컬 MVP**입니다. 유료 API 키 없이 실행됩니다.
 
-외부 HTTPS 테스트용 Vercel Hobby + Render Free 설정도 준비되어 있습니다. 계정 연결·배포 절차와 무료 저장소의 제한은 [배포 안내](docs/deployment.md)를 확인하세요. 아래 로컬 실행 방식은 그대로 사용할 수 있습니다.
+외부 테스트 주소: **https://hum-phase1.vercel.app** (Vercel Hobby + Render Free).
+
+무료 서버는 첫 접속과 분석에 수 분 걸릴 수 있고, 절전·재시작·재배포 시 녹음과 프로젝트가 사라집니다. 중요한 작품의 보관용으로 사용하지 마세요. 배포 절차와 제한은 [배포 안내](docs/deployment.md)를 확인하세요. 아래 로컬 실행 방식은 그대로 사용할 수 있습니다.
 
 ## 1. 필요한 프로그램
 

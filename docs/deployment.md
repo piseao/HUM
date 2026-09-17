@@ -9,7 +9,18 @@
 - CORS는 지정한 Vercel origin과 localhost만 허용합니다.
 - Render 무료 플랜의 파일 저장소는 임시입니다. 과금 리소스와 영구 디스크는 생성하지 않습니다.
 
-현재 준비 파일만으로 외부 서비스가 자동 생성되지는 않습니다. Vercel/Render 계정 로그인과 저장소 연결이 완료되어야 실제 HTTPS 주소가 발급됩니다.
+## 현재 배포 주소
+
+- HUM 공개 테스트: **https://hum-phase1.vercel.app**
+- Backend 상태 확인: https://hum-phase1-api.onrender.com/api/health
+- GitHub: https://github.com/piseao/HUM (`main`)
+- 배포 코드: `77fcfdb` (2026-09-16). Vercel Hobby / Render Free, 유료 디스크 없음.
+
+현재 서비스는 이미 생성되어 있습니다. 아래 생성 절차는 새 환경을 만들 때의 안내이므로 기존 환경을 사용할 때 중복 생성하지 마세요. Vercel은 GitHub의 `frontend`를, Render는 같은 저장소의 `backend/Dockerfile`을 사용합니다.
+
+현재 Render는 Root Directory `backend`, Docker context `.`, Dockerfile `./Dockerfile`로 생성되었습니다. 아래 Blueprint의 저장소 루트 기준 경로와 동일한 파일을 가리킵니다. CORS는 `https://hum-phase1.vercel.app`, `https://hum-phase1-daeho8-2685.vercel.app`, `https://hum-phase1-git-main-daeho8-2685.vercel.app` 및 기존 localhost를 허용합니다.
+
+PC의 웨일 또는 아이폰 Safari에서 공개 테스트 주소를 열고 새 노래 만들기 → 약 10초 녹음 또는 파일 업로드 → 분석 → 음표 수정 → 멜로디 듣기 → 내 멜로디 확정 → 프로젝트 저장 순서로 확인하세요. 무료 서버의 첫 10초 WAV 분석은 실제 측정에서 약 4분 18초 걸렸습니다. 분석 중에는 탭을 닫거나 새로고침하지 마세요.
 
 ## 무료 플랜에서 꼭 알아둘 점
 
@@ -88,6 +99,14 @@ Vercel에서 다른 사람도 접속할 수 있는 Production 배포 주소를 �
 8. 아이폰의 음성 메모 M4A 파일로 파일 업로드도 확인합니다. 인앱 브라우저 대신 Safari를 사용합니다.
 
 검증된 로컬 가상 마이크 테스트와 실제 아이폰 물리 마이크 테스트는 다릅니다. 실제 발급된 HTTPS 주소에서 최종 확인을 마친 후에만 외부 배포 성공으로 기록합니다.
+
+기존 Playwright 테스트를 외부 무료 서버에서 실행할 때는 느린 분석을 기다리도록 설정합니다. `README.md`의 테스트 음원 생성과 Playwright 설치를 먼저 완료한 뒤 `frontend` 폴더에서 실행하세요.
+
+```bash
+HUM_TEST_URL=https://hum-phase1.vercel.app HUM_TEST_ANALYSIS_TIMEOUT_MS=600000 npm run test:e2e
+```
+
+이 설정은 자동 테스트의 대기시간만 바꿉니다. 기본 로컬 테스트의 분석 대기시간은 150초이며, 앱의 분석 완료 대기시간은 10분입니다. 외부 검증은 무료 서버에 테스트 프로젝트를 생성하므로 실제 사용자 테스트와 동시에 실행하지 않는 편이 좋습니다.
 
 ## 브라우저별 테스트 저장 공간
 
