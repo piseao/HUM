@@ -480,6 +480,106 @@ svg {
 .processing p {
   color: var(--muted);
 }
+.analysis-panel {
+  width: 100%;
+  max-width: 520px;
+  margin: 40px auto 70px;
+  text-align: center;
+}
+.analysis-emblem {
+  color: var(--green);
+  margin-bottom: 20px;
+}
+.analysis-emblem svg {
+  margin: 0 auto;
+}
+.analysis-emblem.failed {
+  color: #993e36;
+}
+.analysis-panel h1 {
+  font-size: 26px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.analysis-percent {
+  font-size: 76px;
+  line-height: 1.2;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin: 26px 0 20px;
+}
+.analysis-percent span {
+  font-size: 26px;
+  font-weight: 400;
+  margin-left: 5px;
+  color: var(--muted);
+}
+.analysis-track {
+  height: 8px;
+  width: 100%;
+  background: #e1e8e3;
+  overflow: hidden;
+  border-radius: 4px;
+}
+.analysis-track > div {
+  height: 100%;
+  background: var(--green);
+}
+.analysis-message {
+  min-height: 52px;
+  margin: 20px 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.analysis-stages {
+  padding: 0;
+  margin: 28px 0;
+  list-style: none;
+  text-align: left;
+}
+.analysis-stages li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  border-bottom: 1px solid #e1e8e3;
+  color: #8a948e;
+  font-size: 15px;
+}
+.analysis-stages svg {
+  justify-self: center;
+}
+.analysis-stages .done {
+  color: var(--green);
+}
+.analysis-stages .current {
+  color: #222e29;
+  font-weight: 600;
+}
+.analysis-stages small {
+  font-size: 12px;
+  font-weight: 400;
+}
+.analysis-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  color: var(--muted);
+  font-size: 13px;
+  margin: 12px 0;
+}
+.analysis-panel .analysis-summary {
+  justify-content: center;
+}
+.analysis-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
 .spin {
   animation: spin 1s linear infinite;
   color: var(--green);

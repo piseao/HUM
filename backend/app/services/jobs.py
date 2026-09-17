@@ -9,6 +9,7 @@ class AnalysisJobs:
     def __init__(self):
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="hum-analysis")
         self.pending = {}
+        self.progress = {}
         self.lock = Lock()
 
     def submit(self, key, service, project_id):
@@ -16,10 +17,26 @@ class AnalysisJobs:
             old = self.pending.get(key)
             if old is not None and not old.done():
                 return
-            self.pending = {k: future for k, future in self.pending.items() if not future.done()}
-            if len(self.pending) >= 3:
+            if sum(not future.done() for future in self.pending.values()) >= 3:
                 raise Conflict("분석 요청이 많습니다. 잠시 후 다시 시도해 주세요.")
-            self.pending[key] = self.executor.submit(service.analyze, project_id)
+            for stale in list(self.pending):
+                if len(self.pending) < 128:
+                    break
+                if self.pending[stale].done():
+                    del self.pending[stale]
+                    self.progress.pop(stale, None)
+            self.progress[key] = {"stage": "audio_preparation", "progress": 25,
+                                  "message": "오디오 준비가 끝났어요. 분석 순서를 기다리고 있어요."}
+
+            def report(stage, progress, message):
+                with self.lock:
+                    self.progress[key] = {"stage": stage, "progress": progress, "message": message}
+
+            self.pending[key] = self.executor.submit(service.analyze, project_id, report)
+
+    def snapshot(self, key):
+        with self.lock:
+            return dict(self.progress.get(key, {}))
 
     def status(self, key):
         with self.lock:

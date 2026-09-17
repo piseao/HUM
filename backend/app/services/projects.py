@@ -1,4 +1,5 @@
 import json
+from time import perf_counter
 from app.models.project import Project, ProjectEdit
 from app.services.analysis import BasicPitchAnalyzer, midi_bytes
 from app.services.repository import JsonProjectRepository
@@ -14,11 +15,14 @@ class ProjectService:
     def __init__(self, repository: JsonProjectRepository, analyzer: BasicPitchAnalyzer, stt: SpeechToTextService):
         self.repo, self.analyzer, self.stt = repository, analyzer, stt
 
-    def analyze(self, project_id: str) -> Project:
+    def analyze(self, project_id: str, report=None) -> Project:
+        report = report or (lambda *args: None)
         with self.repo.lock(project_id):
             project = self.repo.get(project_id)
             if project.status != "draft":
                 return project
+            started = perf_counter()
+            report("pitch_analysis", 25, "목소리에서 음정을 찾고 있어요.")
             original_key = self.repo.key(project_id, "original_notes.json")
             try:
                 original = json.loads(self.repo.storage.read(original_key))
@@ -26,7 +30,12 @@ class ProjectService:
                 notes = [Note.model_validate(n) for n in original]
                 tempo, source = project.tempo, project.tempo_source
             except FileNotFoundError:
-                notes, tempo, source = self.analyzer.analyze(self.repo.storage.path(self.repo.key(project_id, "analysis.wav")))
+                path = self.repo.storage.path(self.repo.key(project_id, "analysis.wav"))
+                if hasattr(self.analyzer, "analyze_with_progress"):
+                    notes, tempo, source = self.analyzer.analyze_with_progress(path, report)
+                else:
+                    notes, tempo, source = self.analyzer.analyze(path)
+            report("melody_generation", 85, "음정을 멜로디로 정리하고 있어요.")
             midi = midi_bytes(notes, tempo)
             try:
                 self.repo.storage.write(original_key, json_bytes([n.model_dump() for n in notes]), immutable=True)
@@ -44,7 +53,9 @@ class ProjectService:
                 except Exception:
                     project.lyrics.status = "unavailable"
             project.status = "analyzed"
+            report("editor_preparation", 90, "멜로디 편집기를 준비하고 있어요.")
             self.repo.storage.write(self.repo.key(project_id, "melody.mid"), midi)
+            project.analysis_seconds = round(perf_counter() - started, 2)
             self.repo.save(project)
             return project
 

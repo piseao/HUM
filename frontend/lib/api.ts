@@ -68,3 +68,57 @@ export const jsonRequest = (method: string, data: unknown): RequestInit => ({
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(data),
 });
+
+export function uploadAudio<T>(
+  form: FormData,
+  onProgress: (fraction: number) => void,
+  signal: AbortSignal,
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const cleanup = () => signal.removeEventListener("abort", abort);
+    const abort = () => xhr.abort();
+    xhr.open("POST", apiUrl("/audio/upload"));
+    clientHeaders().forEach((value, key) => xhr.setRequestHeader(key, value));
+    xhr.timeout = 180_000;
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && event.total > 0)
+        onProgress(event.loaded / event.total);
+    };
+    xhr.onload = () => {
+      cleanup();
+      let data;
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch {
+        reject(new Error("서버 응답을 읽지 못했습니다. 다시 시도해 주세요."));
+        return;
+      }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+      else
+        reject(
+          new Error(
+            typeof data?.detail === "string"
+              ? data.detail
+              : "오디오를 업로드하지 못했어요. 다시 시도해 주세요.",
+          ),
+        );
+    };
+    xhr.onerror = xhr.ontimeout = () => {
+      cleanup();
+      reject(
+        new Error("서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."),
+      );
+    };
+    xhr.onabort = () => {
+      cleanup();
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    if (signal.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+    signal.addEventListener("abort", abort, { once: true });
+    xhr.send(form);
+  });
+}

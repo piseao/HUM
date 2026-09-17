@@ -55,6 +55,7 @@ class Project(BaseModel):
     lyrics: Lyrics = Field(default_factory=Lyrics)
     tempo: float = 120
     tempo_source: str = "default"
+    analysis_seconds: Optional[float] = None
     status: Literal["draft", "analyzed", "locked", "saved"] = "draft"
 
 

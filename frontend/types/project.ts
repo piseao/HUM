@@ -23,7 +23,25 @@ export type Project = {
   lyrics: { original: string; edited: string; status: string };
   tempo: number;
   tempo_source: string;
+  analysis_seconds?: number | null;
   status: "draft" | "analyzed" | "locked" | "saved";
+};
+export type AnalysisStage =
+  | "upload"
+  | "audio_preparation"
+  | "pitch_analysis"
+  | "melody_generation"
+  | "editor_preparation"
+  | "complete";
+export type AnalysisProgress = {
+  stage: AnalysisStage;
+  progress: number;
+  message: string;
+};
+export type AnalysisJob = Partial<AnalysisProgress> & {
+  status: "analyzing" | "complete";
+  job_id?: string;
+  project?: Project;
 };
 export type ProjectSummary = Pick<
   Project,

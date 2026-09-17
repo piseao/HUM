@@ -7,7 +7,6 @@ import {
   Check,
   ChevronRight,
   FolderOpen,
-  LoaderCircle,
   LockKeyhole,
   Mic,
   Music2,
@@ -19,9 +18,16 @@ import {
 import Recorder from "@/components/recorder";
 import PianoRoll from "@/components/piano-roll";
 import { OriginalAudio, MidiDownload } from "@/components/project-media";
-import { api, jsonRequest } from "@/lib/api";
+import ProgressPanel, { AnalysisSummary } from "@/components/analysis-progress";
+import { api, jsonRequest, uploadAudio } from "@/lib/api";
+import { nextPoll } from "@/lib/analysis";
 import { playMelody } from "@/lib/player";
-import { Project, ProjectSummary } from "@/types/project";
+import {
+  AnalysisJob,
+  AnalysisProgress,
+  Project,
+  ProjectSummary,
+} from "@/types/project";
 
 type View = "home" | "record" | "upload" | "analyzing" | "editor";
 const statusName = {
@@ -44,6 +50,18 @@ export default function Studio() {
   const [playhead, setPlayhead] = useState(0);
   const stopRef = useRef<(() => void) | null>(null);
   const generation = useRef(0);
+  const [analysisProgress, setAnalysisProgress] = useState<AnalysisProgress>({
+    stage: "upload",
+    progress: 0,
+    message: "오디오 업로드 중...",
+  });
+  const [analysisError, setAnalysisError] = useState("");
+  const analysisController = useRef<AbortController | null>(null);
+  const recording = useRef<{
+    blob: Blob;
+    mode: "hum" | "song";
+    filename: string;
+  } | null>(null);
   const loadProjects = useCallback(async () => {
     try {
       setProjects(await api<ProjectSummary[]>("/projects"));
@@ -59,19 +77,31 @@ export default function Studio() {
     setPlayhead(0);
   }, []);
   useEffect(() => {
+    let active = true;
     void loadProjects();
     const id = new URLSearchParams(window.location.search).get("project");
     if (id) {
       setBusy(true);
       api<Project>(`/projects/${encodeURIComponent(id)}`)
         .then((p) => {
+          if (!active) return;
           setProject(p);
-          setView("editor");
+          if (p.status === "draft") void analyze(p.id, true);
+          else {
+            setView("editor");
+            setBusy(false);
+          }
         })
-        .catch((e) => setError(e.message))
-        .finally(() => setBusy(false));
+        .catch((e) => {
+          if (active) {
+            setError(e.message);
+            setBusy(false);
+          }
+        });
     }
     return () => {
+      active = false;
+      analysisController.current?.abort();
       generation.current++;
       stopRef.current?.();
     };
@@ -104,6 +134,8 @@ export default function Studio() {
     )
       return;
     stop();
+    analysisController.current?.abort();
+    setAnalysisError("");
     setDirty(false);
     setProject(null);
     setView("home");
@@ -119,75 +151,140 @@ export default function Studio() {
     try {
       const p = await api<Project>(`/projects/${id}`);
       setProject(p);
-      setView("editor");
       setDirty(false);
       changeUrl(id);
+      if (p.status === "draft") await analyze(id, true);
+      else setView("editor");
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
     }
   }
-  async function analyze(id: string) {
+  async function analyze(id: string, resume = false) {
+    analysisController.current?.abort();
+    const controller = new AbortController();
+    analysisController.current = controller;
+    const signal = controller.signal;
+    setBusy(true);
+    setAnalysisError("");
     setView("analyzing");
-    let result = await api<{ project?: Project }>(
-      "/audio/analyze?background=true",
-      jsonRequest("POST", { project_id: id }),
-    );
-    const deadline = Date.now() + 10 * 60 * 1000;
-    while (!result.project) {
-      if (Date.now() > deadline)
-        throw new Error(
-          "분석이 오래 걸리고 있습니다. 잠시 후 내 프로젝트에서 다시 확인해 주세요.",
-        );
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      result = await api<{ project?: Project }>(`/audio/analyze/${id}`);
+    setAnalysisProgress({
+      stage: "audio_preparation",
+      progress: 25,
+      message: "저장된 분석 상태를 확인하고 있어요.",
+    });
+    try {
+      let result = await api<AnalysisJob>(
+        resume ? `/audio/analyze/${id}` : "/audio/analyze?background=true",
+        {
+          ...(resume ? {} : jsonRequest("POST", { project_id: id })),
+          signal,
+        },
+      );
+      while (!signal.aborted) {
+        if (result.project) {
+          setProject(result.project);
+          setAnalysisProgress({
+            stage: "complete",
+            progress: 100,
+            message: "멜로디를 찾았어요.",
+          });
+          setDirty(false);
+          await nextPoll(signal, 800);
+          if (!signal.aborted) setView("editor");
+          return;
+        }
+        setAnalysisProgress({
+          stage: result.stage || "pitch_analysis",
+          progress: result.progress ?? 25,
+          message: result.message || "목소리에서 음정을 찾고 있어요.",
+        });
+        await nextPoll(signal);
+        result = await api<AnalysisJob>(`/audio/analyze/${id}`, { signal });
+      }
+    } catch (e) {
+      if (!signal.aborted)
+        setAnalysisError((e as Error).message || "잠시 후 다시 분석해 주세요.");
+    } finally {
+      if (!signal.aborted) setBusy(false);
     }
-    setProject(result.project);
-    setView("editor");
-    setDirty(false);
   }
   async function upload(blob: Blob, mode: "hum" | "song", filename: string) {
     setBusy(true);
     setError("");
     setNotice("");
-    let uploaded = false;
+    setAnalysisError("");
+    setProject(null);
+    changeUrl();
+    recording.current = { blob, mode, filename };
+    analysisController.current?.abort();
+    const controller = new AbortController();
+    analysisController.current = controller;
+    setAnalysisProgress({
+      stage: "upload",
+      progress: 0,
+      message: "오디오 업로드 중...",
+    });
+    setView("upload");
     try {
       if (!blob.size)
         throw new Error("녹음 파일이 없습니다. 먼저 녹음해 주세요.");
       if (blob.size > 25 * 1024 * 1024)
         throw new Error("파일은 25MB 이하로 올려 주세요.");
-      setView("upload");
       const form = new FormData();
       form.append("file", blob, filename);
       form.append("input_type", mode);
-      const result = await api<{ project_id: string; project: Project }>(
-        "/audio/upload",
-        { method: "POST", body: form },
+      const result = await uploadAudio<{
+        project_id: string;
+        project: Project;
+      }>(
+        form,
+        (fraction) => {
+          if (!controller.signal.aborted)
+            setAnalysisProgress(
+              fraction >= 1
+                ? {
+                    stage: "audio_preparation",
+                    progress: 15,
+                    message: "오디오를 분석할 수 있도록 준비하고 있어요.",
+                  }
+                : {
+                    stage: "upload",
+                    progress: Math.floor(15 * fraction),
+                    message: "오디오 업로드 중...",
+                  },
+            );
+        },
+        controller.signal,
       );
-      uploaded = true;
+      if (controller.signal.aborted) return;
       setProject(result.project);
       changeUrl(result.project_id);
       await analyze(result.project_id);
     } catch (e) {
-      setError((e as Error).message);
-      setView(uploaded ? "editor" : "record");
+      if (!controller.signal.aborted) setAnalysisError((e as Error).message);
     } finally {
-      setBusy(false);
+      if (!controller.signal.aborted) setBusy(false);
     }
   }
   async function retry() {
-    if (!project) return;
-    setBusy(true);
     setError("");
-    try {
-      await analyze(project.id);
-    } catch (e) {
-      setError((e as Error).message);
-      setView("editor");
-    } finally {
-      setBusy(false);
-    }
+    if (project) await analyze(project.id);
+    else if (recording.current) {
+      const { blob, mode, filename } = recording.current;
+      await upload(blob, mode, filename);
+    } else recordAgain();
+  }
+  function recordAgain() {
+    analysisController.current?.abort();
+    recording.current = null;
+    setProject(null);
+    setAnalysisError("");
+    setError("");
+    setBusy(false);
+    setView("record");
+    changeUrl();
   }
   async function persist(action: "edit" | "lock" | "save") {
     if (!project) return;
@@ -408,27 +505,13 @@ export default function Studio() {
           </div>
         )}
         {processing && (
-          <section className="processing">
-            <div className="processing-symbol">
-              <AudioLines size={48} />
-            </div>
-            <div className="eyebrow">
-              {view === "upload"
-                ? "SAVING YOUR VOICE"
-                : "LISTENING TO YOUR MELODY"}
-            </div>
-            <h1>
-              {view === "upload"
-                ? "목소리를 기록하고 있어요."
-                : "멜로디를 듣고 있어요."}
-            </h1>
-            <p>
-              {view === "upload"
-                ? "원본 녹음을 안전하게 저장하고 있습니다."
-                : "첫 분석에는 시간이 조금 걸릴 수 있어요."}
-            </p>
-            <LoaderCircle className="spin" size={24} />
-          </section>
+          <ProgressPanel
+            progress={analysisProgress}
+            error={analysisError}
+            project={project}
+            onRetry={retry}
+            onRecord={recordAgain}
+          />
         )}
         {view === "editor" && project && (
           <>
@@ -437,6 +520,9 @@ export default function Studio() {
                 {project.melody.locked ? "YOUR ORIGINAL MELODY" : "YOUR MELODY"}
               </div>
               <h1>우리가 들은 멜로디입니다.</h1>
+              {project.analysis_seconds != null && (
+                <AnalysisSummary project={project} />
+              )}
               <div className="project-title">
                 <input
                   aria-label="프로젝트 이름"

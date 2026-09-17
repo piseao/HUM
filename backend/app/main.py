@@ -133,21 +133,30 @@ def create_app(data_dir: Path = ROOT, analyzer=None):
         existing = get_project(body.project_id, repo)
         if background:
             if existing.status != "draft":
-                return {"status": "complete", "project": existing}
+                return completed(existing)
             key = (str(repo.storage.path("")), body.project_id)
             jobs.submit(key, service, body.project_id)
-            return JSONResponse({"status": "analyzing", "project_id": body.project_id}, status_code=202)
+            return JSONResponse({"status": "analyzing", "project_id": body.project_id,
+                                 "job_id": body.project_id, **jobs.snapshot(key)}, status_code=202)
         project = service.analyze(body.project_id)
         return {"project_id": project.id, "tempo": project.tempo, "notes": project.melody.edited_notes, "project": project}
 
+    def completed(project):
+        return {"status": "complete", "job_id": project.id, "project_id": project.id,
+                "stage": "complete", "progress": 100, "message": "멜로디를 찾았어요.",
+                "project": project}
+
+    @app.get("/api/audio/analyze/{project_id}/status")
     @app.get("/api/audio/analyze/{project_id}")
     def analysis_status(project_id: str, request: Request):
         repo, _ = workspace(request)
         project = get_project(project_id, repo)
         if project.status != "draft":
-            return {"status": "complete", "project": project}
-        result = jobs.status((str(repo.storage.path("")), project_id))
-        return {"status": "complete", "project": result} if result else {"status": "analyzing"}
+            return completed(project)
+        key = (str(repo.storage.path("")), project_id)
+        result = jobs.status(key)
+        return completed(result) if result else {"status": "analyzing", "job_id": project_id,
+                                               "project_id": project_id, **jobs.snapshot(key)}
 
     @app.get("/api/projects")
     def list_projects(request: Request):
