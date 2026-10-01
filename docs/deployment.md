@@ -14,7 +14,7 @@
 - HUM 공개 테스트: **https://hum-phase1.vercel.app**
 - Backend 상태 확인: https://hum-phase1-api.onrender.com/api/health
 - GitHub: https://github.com/piseao/HUM (`main`)
-- 배포 코드: `77fcfdb` (2026-09-16). Vercel Hobby / Render Free, 유료 디스크 없음.
+- 배포 코드: `c7e7e8c` (2026-09-17 분석 진행률 개선, 2026-10-01 실환경 재검증). Vercel Hobby / Render Free, 유료 디스크 없음.
 
 현재 서비스는 이미 생성되어 있습니다. 아래 생성 절차는 새 환경을 만들 때의 안내이므로 기존 환경을 사용할 때 중복 생성하지 마세요. Vercel은 GitHub의 `frontend`를, Render는 같은 저장소의 `backend/Dockerfile`을 사용합니다.
 
