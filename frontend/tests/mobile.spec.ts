@@ -20,6 +20,7 @@ test("mobile humming upload, touch pitch edit, resize and draft restore", async 
   const lengthInput = page.getByRole("spinbutton", { name: "음표 길이" });
   const oldLength = Number(await lengthInput.inputValue());
   const edge = note.locator(".resize.end");
+  await edge.scrollIntoViewIfNeeded();
   const edgeBox = (await edge.boundingBox())!;
   await page.mouse.move(edgeBox.x + edgeBox.width / 2, edgeBox.y + edgeBox.height / 2);
   await page.mouse.down();
@@ -29,10 +30,12 @@ test("mobile humming upload, touch pitch edit, resize and draft restore", async 
   await page.getByRole("button", { name: "실행 취소" }).click();
   expect(Number(await lengthInput.inputValue())).toBeCloseTo(oldLength, 2);
   await page.getByRole("textbox", { name: "프로젝트 이름" }).fill("모바일 흥얼거리기 검증");
+  await page.getByRole("combobox", { name: "멜로디 악기" }).selectOption("piano");
   await page.getByRole("button", { name: "임시 저장" }).click();
   await expect(page.getByText("수정 사항을 저장했습니다.")).toBeVisible();
   const edited = await note.getAttribute("aria-label");
   await page.reload();
+  await expect(page.getByRole("combobox", { name: "멜로디 악기" })).toHaveValue("piano");
   await expect(page.locator(".note").first()).toHaveAttribute("aria-label", edited!);
   await expect(page.getByRole("textbox", { name: "가사 입력" })).toHaveCount(0);
   await page.setViewportSize({ width: 320, height: 568 });

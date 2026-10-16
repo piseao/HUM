@@ -67,21 +67,28 @@ test("record, analyze with Basic Pitch, edit, play, lock, save and reopen", asyn
   await expect(
     page.getByText("가사 자동 인식은 아직 연결되지 않았습니다."),
   ).toBeVisible();
+  for (const instrument of ["synth", "piano", "bell", "strings"]) {
+    await page.getByRole("combobox", { name: "멜로디 악기" }).selectOption(instrument);
+    await page.getByRole("button", { name: "멜로디 듣기" }).click();
+    await expect(page.getByRole("button", { name: "재생 정지" })).toBeVisible();
+    await page.waitForTimeout(800);
+    const audible = await page.evaluate(() =>
+      (window as unknown as { humAnalyzers: AnalyserNode[] }).humAnalyzers.some(
+        (analyser) => {
+          const samples = new Float32Array(analyser.fftSize);
+          analyser.getFloatTimeDomainData(samples);
+          return samples.some((value) => Math.abs(value) > 0.0001);
+        },
+      ),
+    );
+    expect(audible).toBeTruthy();
+    await expect(page.locator(".playhead")).toBeVisible();
+    await page.getByRole("button", { name: "재생 정지" }).click();
+  }
+  // Switching instruments during playback must stop the previous voice.
   await page.getByRole("button", { name: "멜로디 듣기" }).click();
-  await expect(page.getByRole("button", { name: "재생 정지" })).toBeVisible();
-  await page.waitForTimeout(800);
-  const audible = await page.evaluate(() =>
-    (window as unknown as { humAnalyzers: AnalyserNode[] }).humAnalyzers.some(
-      (analyser) => {
-        const samples = new Float32Array(analyser.fftSize);
-        analyser.getFloatTimeDomainData(samples);
-        return samples.some((value) => Math.abs(value) > 0.0001);
-      },
-    ),
-  );
-  expect(audible).toBeTruthy();
-  await expect(page.locator(".playhead")).toBeVisible();
-  await page.getByRole("button", { name: "재생 정지" }).click();
+  await page.getByRole("combobox", { name: "멜로디 악기" }).selectOption("bell");
+  await expect(page.getByRole("button", { name: "멜로디 듣기" })).toBeVisible();
   await mkdir("/tmp/hum-screens", { recursive: true });
   await page.screenshot({
     path: "/tmp/hum-screens/editor-desktop.png",
@@ -94,6 +101,7 @@ test("record, analyze with Basic Pitch, edit, play, lock, save and reopen", asyn
   await expect(
     page.getByText("이 멜로디를 원곡 멜로디로 저장합니다.", { exact: true }),
   ).toBeVisible();
+  await page.getByRole("combobox", { name: "멜로디 악기" }).selectOption("strings");
   await page
     .getByRole("button", { name: "프로젝트 저장", exact: true })
     .click();
@@ -101,6 +109,7 @@ test("record, analyze with Basic Pitch, edit, play, lock, save and reopen", asyn
   const url = page.url();
   const second = await context.newPage();
   await second.goto(url);
+  await expect(second.getByRole("combobox", { name: "멜로디 악기" })).toHaveValue("strings");
   await expect(
     second.getByRole("textbox", { name: "프로젝트 이름" }),
   ).toHaveValue("브라우저 검증 멜로디");

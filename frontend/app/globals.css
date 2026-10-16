@@ -611,10 +611,24 @@ svg {
   white-space: nowrap;
 }
 .playback-toolbar {
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   gap: 22px;
   margin-bottom: 18px;
+}
+.instrument-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.instrument-picker select {
+  font: inherit;
+  color: inherit;
+  background: white;
+  border: 1px solid #d8ddd8;
+  border-radius: 8px;
+  padding: 10px 12px;
 }
 .tempo {
   font-size: 12px;

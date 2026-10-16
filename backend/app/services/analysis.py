@@ -29,11 +29,11 @@ def decode_audio(source: Path, destination: Path) -> float:
     return info.duration
 
 
-def midi_bytes(notes: list[Note], tempo: float) -> bytes:
+def midi_bytes(notes: list[Note], tempo: float, instrument: str = "synth") -> bytes:
     import pretty_midi
     try:
         midi = pretty_midi.PrettyMIDI(initial_tempo=tempo)
-        piano = pretty_midi.Instrument(program=0)
+        piano = pretty_midi.Instrument(program={"synth": 80, "piano": 0, "bell": 10, "strings": 48}[instrument])
         for note in notes:
             piano.notes.append(pretty_midi.Note(
                 velocity=max(1, round(note.velocity * 127)), pitch=note.pitch,

@@ -21,12 +21,13 @@ import { OriginalAudio, MidiDownload } from "@/components/project-media";
 import ProgressPanel, { AnalysisSummary } from "@/components/analysis-progress";
 import { api, jsonRequest, uploadAudio } from "@/lib/api";
 import { nextPoll } from "@/lib/analysis";
-import { playMelody } from "@/lib/player";
+import { instruments, playMelody } from "@/lib/player";
 import {
   AnalysisJob,
   AnalysisProgress,
   Project,
   ProjectSummary,
+  Instrument,
 } from "@/types/project";
 
 type View = "home" | "record" | "upload" | "analyzing" | "editor";
@@ -300,6 +301,7 @@ export default function Studio() {
           title: project.title,
           notes: project.melody.edited_notes,
           lyrics_edited: project.lyrics.edited,
+          instrument: project.instrument || "synth",
         }),
       );
       setProject(p);
@@ -330,11 +332,15 @@ export default function Studio() {
     setBusy(true);
     setError("");
     try {
-      const halt = await playMelody(project.melody.edited_notes, () => {
-        setPlaying(false);
-        setPlayhead(0);
-        stopRef.current = null;
-      });
+      const halt = await playMelody(
+        project.melody.edited_notes,
+        () => {
+          setPlaying(false);
+          setPlayhead(0);
+          stopRef.current = null;
+        },
+        project.instrument || "synth",
+      );
       if (token !== generation.current) {
         halt();
         return;
@@ -550,6 +556,27 @@ export default function Studio() {
             ) : (
               <>
                 <div className="playback-toolbar">
+                  <label className="instrument-picker">
+                    악기
+                    <select
+                      aria-label="멜로디 악기"
+                      value={project.instrument || "synth"}
+                      disabled={busy}
+                      onChange={(e) => {
+                        stop();
+                        setProject({
+                          ...project,
+                          instrument: e.target.value as Instrument,
+                        });
+                        setDirty(true);
+                        setNotice("");
+                      }}
+                    >
+                      {instruments.map(({ id, label }) => (
+                        <option key={id} value={id}>{label}</option>
+                      ))}
+                    </select>
+                  </label>
                   <button className="primary" onClick={play} disabled={busy}>
                     {playing ? <Square size={17} /> : <Play size={17} />}{" "}
                     {playing ? "재생 정지" : "멜로디 듣기"}
@@ -562,6 +589,10 @@ export default function Studio() {
                   </span>
                   <MidiDownload projectId={project.id} onError={setError} />
                 </div>
+                <p className="muted">
+                  악기 느낌을 표현한 합성음으로 미리 듣습니다.
+                  MIDI에는 저장한 악기 설정이 반영됩니다.
+                </p>
                 <PianoRoll
                   key={project.id}
                   notes={project.melody.edited_notes}
@@ -665,7 +696,7 @@ export default function Studio() {
       <footer className="site-footer">
         <span>HUM</span>
         <span>Every song starts with you.</span>
-        <span>PHASE 01</span>
+        <span>PHASE 2A</span>
       </footer>
       {confirmLock && (
         <div className="modal-backdrop">

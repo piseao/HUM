@@ -2,7 +2,7 @@
 
 떠오른 멜로디를 진짜 노래로.
 
-브라우저에서 부른 노래를 기록하고, Spotify Basic Pitch로 음표를 추출한 뒤 직접 수정하고 확정하는 **Phase 1 로컬 MVP**입니다. 유료 API 키 없이 실행됩니다.
+브라우저에서 부른 노래를 기록하고, Spotify Basic Pitch로 음표를 추출한 뒤 직접 수정하고 확정하는 MVP입니다. **Phase 2A 첫 기능인 악기 선택**을 추가했습니다. 유료 API 키 없이 실행됩니다.
 
 외부 테스트 주소: **https://hum-phase1.vercel.app** (Vercel Hobby + Render Free).
 
@@ -138,7 +138,7 @@ python3 scripts/dev.py stop
 7. **분석하기**를 누릅니다. 첫 실행은 모델 로딩과 계산 준비로 더 오래 걸릴 수 있습니다.
 8. 피아노롤에서 음표 가운데를 위아래로 움직여 음정을 바꿉니다. 양 끝을 움직이면 시작/끝 시간이 바뀝니다.
 9. 음표 선택 후 아래의 음 높이·시작·길이 입력란으로도 수정할 수 있습니다. 키보드 위/아래 화살표도 지원합니다.
-10. **멜로디 듣기**로 수정 결과를 확인합니다. 삼각파 기반의 간단한 신스 소리입니다.
+10. **악기**에서 기본 신스·피아노·벨·스트링을 선택하고 **멜로디 듣기**로 수정 결과를 확인합니다. 악기 느낌을 표현한 합성음이며 실제 악기 샘플 음원은 아닙니다. 악기를 바꾸면 재생이 정지하므로 다시 듣기를 누르세요. 선택은 임시 저장 또는 프로젝트 저장으로 보관하며, 멜로디 확정 후에도 악기를 변경할 수 있습니다.
 11. 노래 모드에서는 가사를 직접 입력할 수 있습니다. 자동 인식은 미연결 안내를 표시합니다.
 12. 프로젝트 이름을 입력합니다. 필요하면 **임시 저장**으로 편집 상태를 보관합니다.
 13. **내 멜로디 확정 → 확정하기**를 누릅니다. 이후 음표 수정은 차단됩니다.
@@ -289,5 +289,9 @@ backend/projects/<UUID>/
 - AI 편곡, AI 보컬, 음원 출시, 결제 등 Phase 2 기능은 구현하지 않았습니다.
 
 자세한 API·설계: [docs/architecture.md](docs/architecture.md). 검증 기록: [docs/verification.md](docs/verification.md).
+
+실제 목소리·아이폰 확인 순서와 WebKit 테스트 실행: [기기 검증 안내](docs/device-verification.md).
+
+저장소 이전용 백업·복원과 운영 전환 조건: [영구 저장 준비](docs/persistent-storage.md).
 
 기술 참고: [Next.js 설치](https://nextjs.org/docs/app/getting-started/installation), [Spotify Basic Pitch](https://github.com/spotify/basic-pitch). 화면 사진: [Unsplash 스튜디오 사진](https://images.unsplash.com/photo-1598488035139-bdbb2231ce04), 라이선스 안내는 [docs/assets.md](docs/assets.md).

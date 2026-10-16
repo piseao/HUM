@@ -70,7 +70,9 @@ class ProjectService:
                 raise Conflict("확정한 멜로디는 변경할 수 없습니다.")
             if not edit.notes:
                 raise Conflict("멜로디에 음표가 있어야 합니다.")
-            midi = midi_bytes(edit.notes, project.tempo)
+            instrument = edit.instrument or project.instrument
+            midi = midi_bytes(edit.notes, project.tempo, instrument)
+            project.instrument = instrument
             project.title = edit.title.strip() or "이름 없는 멜로디"
             project.melody.edited_notes = edit.notes
             project.lyrics.edited = edit.lyrics_edited

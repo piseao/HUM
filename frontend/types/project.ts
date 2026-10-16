@@ -1,3 +1,4 @@
+export type Instrument = "synth" | "piano" | "bell" | "strings";
 export type Note = {
   id: string;
   pitch: number;
@@ -7,6 +8,7 @@ export type Note = {
   velocity: number;
 };
 export type Project = {
+  instrument?: Instrument;
   id: string;
   title: string;
   created_at: string;

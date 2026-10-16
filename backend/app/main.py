@@ -197,7 +197,7 @@ def create_app(data_dir: Path = ROOT, analyzer=None):
     def download_midi(project_id: str, request: Request):
         repo, _ = workspace(request)
         p = get_project(project_id, repo)
-        return Response(midi_bytes(p.melody.edited_notes, p.tempo), media_type="audio/midi", headers={"Content-Disposition": 'attachment; filename="melody.mid"'})
+        return Response(midi_bytes(p.melody.edited_notes, p.tempo, p.instrument), media_type="audio/midi", headers={"Content-Disposition": 'attachment; filename="melody.mid"'})
 
     return app
 

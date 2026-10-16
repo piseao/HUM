@@ -2,6 +2,8 @@ from datetime import datetime, timezone
 from typing import Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+Instrument = Literal["synth", "piano", "bell", "strings"]
+
 
 def now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -44,6 +46,7 @@ class Lyrics(BaseModel):
 
 
 class Project(BaseModel):
+    instrument: Instrument = "synth"
     id: str
     title: str = "이름 없는 멜로디"
     created_at: str = Field(default_factory=now)
@@ -60,6 +63,7 @@ class Project(BaseModel):
 
 
 class ProjectEdit(BaseModel):
+    instrument: Optional[Instrument] = None
     model_config = ConfigDict(extra="forbid")
     revision: int = Field(ge=0)
     title: str = Field(min_length=1, max_length=120)
