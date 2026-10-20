@@ -14,13 +14,13 @@
 - HUM 공개 테스트: **https://hum-phase1.vercel.app**
 - Backend 상태 확인: https://hum-phase1-api.onrender.com/api/health
 - GitHub: https://github.com/piseao/HUM (`main`)
-- 배포 코드: `c7e7e8c` (2026-09-17 분석 진행률 개선, 2026-10-01 실환경 재검증). Vercel Hobby / Render Free, 유료 디스크 없음.
+- 배포 코드: `7af002d` (2026-10-16 Phase 2A 악기 선택). Vercel Hobby / Render Free, 유료 디스크 없음.
 
 현재 서비스는 이미 생성되어 있습니다. 아래 생성 절차는 새 환경을 만들 때의 안내이므로 기존 환경을 사용할 때 중복 생성하지 마세요. Vercel은 GitHub의 `frontend`를, Render는 같은 저장소의 `backend/Dockerfile`을 사용합니다.
 
 현재 Render는 Root Directory `backend`, Docker context `.`, Dockerfile `./Dockerfile`로 생성되었습니다. 아래 Blueprint의 저장소 루트 기준 경로와 동일한 파일을 가리킵니다. CORS는 `https://hum-phase1.vercel.app`, `https://hum-phase1-daeho8-2685.vercel.app`, `https://hum-phase1-git-main-daeho8-2685.vercel.app` 및 기존 localhost를 허용합니다.
 
-PC의 웨일 또는 아이폰 Safari에서 공개 테스트 주소를 열고 새 노래 만들기 → 약 10초 녹음 또는 파일 업로드 → 분석 → 음표 수정 → 멜로디 듣기 → 내 멜로디 확정 → 프로젝트 저장 순서로 확인하세요. 무료 서버의 첫 10초 WAV 분석은 실제 측정에서 약 4분 18초 걸렸습니다. 분석 중에는 탭을 닫거나 새로고침하지 마세요.
+PC의 웨일 또는 아이폰 Safari에서 공개 테스트 주소를 열고 새 노래 만들기 → 약 10초 녹음 또는 파일 업로드 → 분석 → 음표 수정 → 악기 선택·멜로디 듣기 → 내 멜로디 확정 → 프로젝트 저장 순서로 확인하세요. 무료 서버의 첫 10초 WAV 분석은 과거 측정에서 약 4분 18초 걸렸습니다. 업로드 완료 후 프로젝트 URL이 생기면 새로고침·화면 복귀 시 분석 상태를 복원합니다. 업로드 응답 전에 화면을 닫으면 다시 업로드해야 합니다.
 
 ## 무료 플랜에서 꼭 알아둘 점
 
@@ -145,4 +145,4 @@ HUM_TEST_URL=https://hum-phase1.vercel.app HUM_TEST_ANALYSIS_TIMEOUT_MS=600000 n
 
 명시적으로 전환하기로 결정한 뒤에만 Render 유료 서비스와 `/data` 영구 디스크를 연결합니다. 현재 저장 인터페이스와 `HUM_DATA_DIR`는 그대로 사용할 수 있습니다. 무료 서비스의 기존 파일은 자동으로 영구 디스크로 이전되지 않습니다. 전환 전에 보관할 데이터를 별도 백업해야 합니다.
 
-Railway도 컨테이너와 volume에 적합하지만 지속적인 무료 테스트를 우선하여 현재는 Render Free로 준비했습니다. Phase 2A의 악기 기능은 포함하지 않습니다.
+Railway도 컨테이너와 volume에 적합하지만 지속적인 무료 테스트를 우선하여 현재는 Render Free를 유지합니다. Phase 2A의 첫 기능으로 멜로디 악기 선택과 저장, MIDI 악기 설정을 제공합니다. 자동 반주·편곡과 실제 악기 샘플 음원은 아직 포함하지 않습니다.

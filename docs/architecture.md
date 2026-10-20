@@ -1,4 +1,4 @@
-# Phase 1 설계
+# HUM 설계 (Phase 2A 악기 선택까지)
 
 ## 실행 흐름
 
@@ -20,13 +20,15 @@ flowchart TD
 
 ## API
 
-모든 경로는 `/api`로 시작합니다. Frontend는 Next.js rewrite를 통해 같은 origin으로 요청합니다. 최대 분석 대기 시간은 5분으로 설정했습니다. 요청이 끊겨도 이미 업로드한 프로젝트는 목록에서 다시 열 수 있습니다.
+모든 경로는 `/api`로 시작합니다. 로컬 Frontend는 Next.js rewrite를 사용하며, 공개 배포에서는 브라우저가 HTTPS 백엔드에 직접 요청합니다. UI는 백그라운드 분석을 제출하고 서버 상태를 조회합니다. 업로드 완료 후에는 프로젝트 URL을 통해 새로고침하거나 다시 열어 분석 상태를 복원할 수 있습니다. 5분 프록시 설정은 분석 전체의 제한 시간이 아닙니다.
 
 | 메서드/경로 | 입력 | 결과 |
 | --- | --- | --- |
 | GET /health | 없음 | 서비스 상태, 분석 엔진, STT 상태 |
 | POST /audio/upload | multipart: file, input_type=hum 또는 song | 201: project_id, audio 메타데이터, project |
 | POST /audio/analyze | JSON: project_id | project_id, tempo, notes, project |
+| POST /audio/analyze?background=true | JSON: project_id | 202 작업 접수 또는 이미 완료된 결과 |
+| GET /audio/analyze/{id} 또는 /audio/analyze/{id}/status | 없음 | 상태, 단계, 진행률, 완료 시 project |
 | GET /projects | 없음 | 최근 수정순 목록 |
 | GET /projects/{id} | 없음 | 전체 프로젝트 |
 | PUT /projects/{id} | ProjectEdit | 임시 저장된 프로젝트 |
@@ -42,11 +44,14 @@ ProjectEdit:
   "revision": 2,
   "title": "나의 첫 노래",
   "notes": [{"id": "note_1", "pitch": 60, "start": 0.5, "end": 1.2, "velocity": 0.8}],
-  "lyrics_edited": "나의 가사"
+  "lyrics_edited": "나의 가사",
+  "instrument": "piano"
 }
 ```
 
 음 이름은 서버가 MIDI pitch에서 계산합니다. 원본 오디오/음표, original 가사, locked 상태를 임의 변경하는 API는 없습니다. 모든 수정·확정 요청에 현재 revision이 필요합니다. revision 불일치는 409입니다. 이미 분석한 프로젝트의 analyze 재호출은 저장 상태를 그대로 반환합니다.
+
+`instrument`는 `synth`, `piano`, `bell`, `strings` 중 하나입니다. 기존 프로젝트는 `synth`를 기본값으로 읽으며, 이전 클라이언트가 필드를 생략하면 저장된 선택을 유지합니다. 브라우저 미리 듣기는 Tone.js 합성음이고 MIDI는 저장된 악기의 GM 프로그램을 사용하므로 재생기의 음원에 따라 소리는 다릅니다.
 
 ## 보존 규칙
 
@@ -56,7 +61,7 @@ ProjectEdit:
 - 편집 값은 edited_notes로만 저장합니다. MIDI도 edited_notes에서 생성합니다.
 - MIDI 생성이 실패하면 lock/save 상태를 갱신하지 않습니다.
 - JSON 스냅샷 각각의 저장은 원자적입니다. 여러 파일 전체가 하나의 DB 트랜잭션은 아닙니다. project.json을 기준으로 보고 MIDI 다운로드 시 기준 데이터로 재생성합니다. 전원 장애 직후 파생 파일이 뒤처질 경우 다음 저장으로 다시 생성할 수 있습니다.
-- Melody Lock은 서버와 화면 양쪽에서 음표 수정을 차단합니다. 확정 후에도 프로젝트 이름과 edited 가사는 저장할 수 있습니다. 확정 해제는 Phase 1에 없습니다.
+- Melody Lock은 서버와 화면 양쪽에서 음표 수정을 차단합니다. 확정 후에도 프로젝트 이름, edited 가사, 악기 선택은 저장할 수 있습니다. 확정 해제는 구현하지 않았습니다.
 
 ## 교체 가능한 구성
 
@@ -67,7 +72,7 @@ ProjectEdit:
 - `services/stt.py`: SpeechToTextService와 Transcription. 공급자 미설정 또는 실패가 멜로디 분석을 막지 않습니다.
 - `services/projects.py`: 분석·편집·확정 규칙. 현재 파일 잠금/파일 export 연결은 JSON 구현을 사용하므로 DB 이전 때 이 부분도 연결해 주세요.
 
-현재는 동기 분석 API이며 FastAPI의 thread pool에서 계산합니다. 분산 작업 큐, 취소, 다중 서버 분석은 포함하지 않습니다. 데이터는 같은 서버의 사용자 모두에게 보이는 개인 로컬 도구입니다. 기본 서버는 127.0.0.1에만 바인딩합니다.
+동기 분석 API와 프로세스 내부 백그라운드 분석을 함께 제공합니다. `services/jobs.py`가 진행률·대기열을 관리하며, 분산 작업 큐·취소·다중 서버 분석은 포함하지 않습니다. 공개 배포는 `HUM_ISOLATE_CLIENTS=true`로 브라우저 식별자의 해시별 폴더를 분리합니다. 로그인 계정이나 기기 간 동기화는 아닙니다. 로컬 기본값은 분리 없는 개인용이며 서버를 127.0.0.1에 바인딩합니다.
 
 ## 입력 제한과 오류
 
